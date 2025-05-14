@@ -1,0 +1,13 @@
+name = "Bensolve"
+uuid = "928be8ad-8316-4b0b-b0ed-060e7dbd1b3c"
+authors = ["Gökhan Kof"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1.6.7"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
