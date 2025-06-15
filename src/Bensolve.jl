@@ -1,6 +1,6 @@
 module Bensolve
 
-export _vlp_init, _get_default_opt, _sol_init, solve, alg
+export molp_solve, vlp_solve
 
 import libbensolve_jll
 using SparseArrays
@@ -13,93 +13,280 @@ function __init__()
 end
 
 include("gen/libbensolve.jl")
+include("common.jl")
+include("file_interface.jl")
+include("functional_interface.jl")
+include("MOI_wrapper/MOI_wrapper.jl")
 
-function _get_default_opt()
-    opt = Ref(opttype(
-        0, 
-        0, 
-        ntuple(_ -> Cchar(0), 256), 
-        PRE_IMG_OFF,
-        FORMAT_AUTO,
-        PRIMAL_SIMPLEX, 
-        LP_METHOD_AUTO, 
-        LP_METHOD_AUTO,
-        DEFAULT_MESSAGE_LEVEL, 
-        DEFAULT_LP_MESSAGE_LEVEL,
-        PRIMAL_BENSON, 
-        PRIMAL_BENSON,
-        DEFAULT_EPS_PHASE0, 
-        DEFAULT_EPS_PHASE1, 
-        DEFAULT_EPS_BENSON_PHASE1, 
-        DEFAULT_EPS_BENSON_PHASE2
-    ))
-    set_default_opt(opt)
-    return opt
-end
+function vlp_solve(
+    P::AbstractMatrix{<:Real},
+    B::AbstractMatrix{<:Real},
+    a::AbstractVector{<:Real},
+    b::AbstractVector{<:Real},
+    l::AbstractVector{<:Real},
+    s::AbstractVector{<:Real}, 
+    generator_matrix::AbstractMatrix{<:Real}, 
+    duality_vector::AbstractVector{<:Real}, 
+    opt_dir::Int = 1, 
+    cone_gen::cone_gen_type = DEFAULT,
+)
+    # Getting the dimensions.
+    m, n, q = size(B)..., size(P, 1)
+    nz, nzobj = sum(B .!= 0), sum(P.!= 0)
 
-function _get_default_vlp()
-    vlp = Ref(vlptype(
-        Ptr{list2d}(C_NULL),          # A_ext
-        Ptr{boundlist}(C_NULL),       # rows
-        Ptr{boundlist}(C_NULL),       # cols
-        0,                            # optdir
-        CONE,                         # cone_gen
-        Ptr{Cdouble}(C_NULL),         # gen
-        Ptr{Cdouble}(C_NULL),         # c
-        Clong(0),                     # nz
-        Clong(0),                     # nzobj
-        lp_idx(0),                    # n
-        lp_idx(0),                    # m
-        lp_idx(0),                    # q
-        lp_idx(0)                     # n_gen
-    ))
-    return vlp
-end
+    # Building A_ext for vlptype
+    A_ext = [B zeros(m, q); -P LinearAlgebra.I(q)]
+    l2d, l2d_ref = _matrix2list2d(A_ext)
 
-function _vlp_init(filename, vlp, opt)
-    result = vlp_init(filename, vlp, opt)
-    return result, vlp, opt
-end
+    # Building the rows and cols for vlptype
+    rows, row_refs = _vecs2boundlist(a, b)
+    cols, col_refs = _vecs2boundlist(l, s)
 
-function _get_default_sol()
-    return Ref(soltype(
-        0,  # m
-        0,  # n
-        0,  # q
-        0,  # o
-        0,  # p
-        0,  # r
-        0,  # h
-        Ptr{Cdouble}(C_NULL),  # eta
-        Ptr{Cdouble}(C_NULL),  # Y
-        Ptr{Cdouble}(C_NULL),  # Z
-        Ptr{Cdouble}(C_NULL),  # c
-        Ptr{Cdouble}(C_NULL),  # R
-        Ptr{Cdouble}(C_NULL),  # H
-        VLP_NOSTATUS,          # status (assuming sol_status_type is an enum or primitive)
-        C_DIR_POS,             # c_dir (same assumption)
-        Csize_t(0),            # pp
-        Csize_t(0),            # dd
-        Csize_t(0),            # pp_dir
-        Csize_t(0)             # dd_dir
-    ))
-end
+    n_gen = size(generator_matrix, 2)
+    
+    gen = eltype(generator_matrix)[]
+    if cone_gen in [CONE, DUALCONE]
+        gen = collect(Iterators.flatten(generator_matrix'))
+    else
+        gen = collect(Iterators.flatten(LinearAlgebra.I(n_gen)'))
+    end
+    gen_ptr = pointer(gen)
 
-function _sol_init(vlp, opt)
-    sol = _get_default_sol()
-    sol_init(sol, vlp, opt)
-    return sol
-end
+    c = duality_vector
+    c_ptr = pointer(c)
 
-function solve(filename)
-    vlp, opt = _get_default_vlp(), _get_default_opt()
-    GC.@preserve vlp opt begin
+    # Get a default opttype
+    opt = _get_default_opt()
+    
+    GC.@preserve l2d l2d_ref rows row_refs cols col_refs gen_ptr c_ptr begin
+        # Build the problem
+        vlp = vlptype(
+            pointer_from_objref(l2d),
+            pointer_from_objref(rows), 
+            pointer_from_objref(cols), 
+            opt_dir,
+            cone_gen,
+            gen_ptr,
+            c_ptr,
+            nz,
+            nzobj,
+            n, m, q, n_gen
+        )
+        # Solve and store the solution temporarily
         mktempdir("."; prefix="jl_Bensolve_") do tmp
-            set_opt(opt, 4, ["./bensolve", filename, "--output_filename", tmp * "/"])
-            ret, vlp, opt = _vlp_init(filename, vlp, opt)
-            sol = _sol_init(vlp, opt)
-            lp_init(vlp)
-            ret = alg(sol, vlp, opt)
+            vlp_ref = Ref(vlp)
+            # Set output location
+            set_opt(opt, 5, ["./bensolve", "", "-s", "--output_filename", tmp * "/"])
+            # Build a solution object
+            sol = _sol_init(vlp_ref, opt)
+            # Prepare to solve
+            lp_init(vlp_ref)
+            elapsed_time = @elapsed ret = alg(sol, vlp_ref, opt) # need to handle when ret != 0
+            dump(sol)
+            if ret > 0
+                write_log_file(vlp_ref, sol, opt, Cdouble(elapsed_time), lp_get_num(Csize_t(0)));
+		        display_info(opt, Cdouble(elapsed_time), lp_get_num(Csize_t(0)));
+            end
+            status = sol[].status
+            @info status
+            lp_free(Csize_t(0))
+            upper_img = Dict{_SolutionIndex, _Solution}()
+            lower_img = Dict{_SolutionIndex, _Solution}()
+            if status == VLP_OPTIMAL
+                adj = _load_adj_inc_info(tmp * "/_adj_p.sol")
+                inc = _load_adj_inc_info(tmp * "/_inc_p.sol")
+                open(tmp * "/_img_p.sol") do f_img
+                    open(tmp * "/_pre_img_p.sol") do f_pre_img
+                        for (i, (line_img, line_pre_img)) in enumerate(zip(eachline(f_img), eachline(f_pre_img)))
+                            id = i - 1
+                            isvertex, y... = parse.(Float64, split(line_img))
+                            x = parse.(Float64, split(line_pre_img))
+                            upper_img[_SolutionIndex(id)] = _Solution(id, y, x, adj[id], isvertex == 1)
+                        end
+                    end
+                end
+                open(tmp * "/_img_d.sol") do f_img
+                    open(tmp * "/_pre_img_d.sol") do f_pre_img
+                        for (i, (line_img, line_pre_img)) in enumerate(zip(eachline(f_img), eachline(f_pre_img)))
+                            id = i - 1
+                            isvertex, y... = parse.(Float64, split(line_img))
+                            x = parse.(Float64, split(line_pre_img))
+                            lower_img[_SolutionIndex(id)] = _Solution(id, y, x, inc[id], isvertex == 1)
+                        end
+                    end
+                end
+            end
+            return status, upper_img, lower_img, elapsed_time
+        end
+    end
+end
+
+function molp_solve(
+    P::AbstractMatrix{<:Real},
+    B::AbstractMatrix{<:Real},
+    a::AbstractVector{<:Real},
+    b::AbstractVector{<:Real},
+    l::AbstractVector{<:Real},
+    s::AbstractVector{<:Real}, 
+    opt_dir::Int = 1;
+)
+    # Getting the dimensions.
+    m, n, q = size(B)..., size(P, 1)
+    nz, nzobj = sum(B .!= 0), sum(P.!= 0)
+
+    # Building A_ext for vlptype
+    A_ext = [B zeros(m, q); -P LinearAlgebra.I(q)]
+    l2d, l2d_ref = _matrix2list2d(A_ext)
+
+    # Building the rows and cols for vlptype
+    rows, row_refs = _vecs2boundlist(a, b)
+    cols, col_refs = _vecs2boundlist(l, s)
+
+    # Get a default opttype
+    opt = _get_default_opt()
+
+    status = VLP_NOSTATUS
+    
+    GC.@preserve l2d l2d_ref rows row_refs cols col_refs begin
+        # Build the problem
+        vlp = vlptype(
+            pointer_from_objref(l2d),
+            pointer_from_objref(rows), 
+            pointer_from_objref(cols), 
+            opt_dir,
+            DEFAULT,
+            C_NULL,
+            C_NULL,
+            nz,
+            nzobj,
+            n, m, q, 0
+        )
+        # Solve and store the solution temporarily
+        mktempdir("."; prefix="jl_Bensolve_") do tmp
+            vlp_ref = Ref(vlp)
+            # Set output location
+            set_opt(opt, 5, ["./bensolve", "", "-s", "--output_filename", tmp * "/"])
+            # Build a solution object
+            sol = _sol_init(vlp_ref, opt)
+            # Prepare to solve
+            lp_init(vlp_ref)
+            elapsed_time = @elapsed ret = alg(sol, vlp_ref, opt) # need to handle when ret != 0
+            dump(sol)
+            if ret > 0
+                write_log_file(vlp_ref, sol, opt, Cdouble(elapsed_time), lp_get_num(Csize_t(0)));
+		        display_info(opt, Cdouble(elapsed_time), lp_get_num(Csize_t(0)));
+            end
+            status = sol[].status
+            @info status
+            lp_free(Csize_t(0))
+            upper_img = Dict{_SolutionIndex, _Solution}()
+            lower_img = Dict{_SolutionIndex, _Solution}()
+            if status == VLP_OPTIMAL
+                adj = _load_adj_inc_info(tmp * "/_adj_p.sol")
+                inc = _load_adj_inc_info(tmp * "/_inc_p.sol")
+                open(tmp * "/_img_p.sol") do f_img
+                    open(tmp * "/_pre_img_p.sol") do f_pre_img
+                        for (i, (line_img, line_pre_img)) in enumerate(zip(eachline(f_img), eachline(f_pre_img)))
+                            id = i - 1
+                            isvertex, y... = parse.(Float64, split(line_img))
+                            x = parse.(Float64, split(line_pre_img))
+                            upper_img[_SolutionIndex(id)] = _Solution(id, y, x, adj[id], isvertex == 1)
+                        end
+                    end
+                end
+                open(tmp * "/_img_d.sol") do f_img
+                    open(tmp * "/_pre_img_d.sol") do f_pre_img
+                        for (i, (line_img, line_pre_img)) in enumerate(zip(eachline(f_img), eachline(f_pre_img)))
+                            id = i - 1
+                            isvertex, y... = parse.(Float64, split(line_img))
+                            x = parse.(Float64, split(line_pre_img))
+                            lower_img[_SolutionIndex(id)] = _Solution(id, y, x, inc[id], isvertex == 1)
+                        end
+                    end
+                end
+            end
+            return status, upper_img, lower_img, elapsed_time
+        end
+    end
+end
+
+function _load_adj_inc_info(filename)
+    dict = Dict{Int, Vector{Int}}()
+    open(filename) do f
+        for (i, l) in enumerate(eachline(f))
+            id = i - 1
+            neighbors = parse.(Int, split(l))
+            dict[id] = neighbors
+        end
+    end
+    return dict
+end
+
+function solve(
+    P::AbstractMatrix{<:Real},
+    B::AbstractMatrix{<:Real},
+    a::AbstractVector{<:Real},
+    b::AbstractVector{<:Real},
+    l::AbstractVector{<:Real},
+    s::AbstractVector{<:Real};
+    opt_dir::Int = 1,
+    cone_gen::cone_gen_type = DEFAULT,
+    generator_matrix::AbstractMatrix{<:Real}, 
+    duality_vector::AbstractVector{<:Real}, 
+)
+    # Getting the dimensions.
+    m, n, q = size(B)..., size(P, 1)
+    nz, nzobj = sum(B .!= 0), sum(P.!= 0)
+
+    # Building A_ext for vlptype
+    A_ext = [B zeros(m, q); -P LinearAlgebra.I(q)]
+    l2d, A_ext_refs = _matrix2list2d(A_ext)
+
+    # Building the rows and cols for vlptype
+    rows, row_refs = _vecs2boundlist(a, b)
+    cols, col_refs = _vecs2boundlist(l, s)
+
+    n_gen = 0
+    if generator_matrix !== nothing
+        n_gen = size(generator_matrix, 2)
+    end
+
+    gen_ptr = C_NULL
+    gen = zeros(q * n_gen)
+    if generator_matrix !== nothing
+        gen .= collect(Iterators.flatten(generator_matrix'))
+        gen_ptr = pointer(gen)
+    end
+
+    c_ptr = C_NULL
+    c = zeros(q)
+    if duality_vector !== nothing
+        c .= duality_vector
+        c_ptr = pointer(c)
+    end
+
+    opt = _get_default_opt()
+
+    # GC.@preserve l2d idx1 idx2 data rows row_refs cols col_refs gen c opt begin
+    GC.@preserve l2d A_ext_refs rows row_refs cols col_refs gen c opt begin
+        vlp = vlptype(
+            pointer_from_objref(l2d),
+            pointer_from_objref(rows), 
+            pointer_from_objref(cols), 
+            opt_dir,
+            cone_gen,
+            gen_ptr,
+            c_ptr,
+            nz,
+            nzobj,
+            n, m, q, n_gen
+        )
+        mktempdir("."; prefix="jl_Bensolve_") do tmp
+            vlp_ref = Ref(vlp)
+            set_opt(opt, 4, ["./bensolve", "tempfile", "--output_filename", tmp * "/"])
+            sol = _sol_init(vlp_ref, opt)
+            lp_init(vlp_ref)
+            ret = alg(sol, vlp_ref, opt)
             res = readdlm(tmp * "/_img_p.sol")
             vertices = res[res[:, 1] .== 1, 2:end]
             directions = res[res[:, 1] .== 0, 2:end]
@@ -108,91 +295,91 @@ function solve(filename)
     end
 end
 
-function solve(
-    P::AbstractMatrix, 
-    B::AbstractMatrix, 
-    a::AbstractVector, 
-    b::AbstractVector, 
-    l::AbstractVector, 
-    s::AbstractVector; 
-    Y::AbstractMatrix, 
-    Z::AbstractMatrix, 
+function _create_molp(
+    P::AbstractMatrix{<:Real},
+    B::AbstractMatrix{<:Real},
+    a::AbstractVector{<:Real},
+    b::AbstractVector{<:Real},
+    l::AbstractVector{<:Real},
+    s::AbstractVector{<:Real};
+    opt_dir::Int = 1, 
 )
+    # Getting the dimensions.
+    m, n, q = size(B)..., size(P, 1)
+    nz, nzobj = sum(B .!= 0), sum(P.!= 0)
+
+    # Building A_ext for vlptype
+    A_ext = [B zeros(m, q); -P LinearAlgebra.I(q)]
+    l2d, l2d_ref = _matrix2list2d(A_ext)
+
+    # Building the rows and cols for vlptype
+    rows, row_refs = _vecs2boundlist(a, b)
+    cols, col_refs = _vecs2boundlist(l, s)
+
+    # Get a default opttype
+    opt = _get_default_opt()
     
+    GC.@preserve l2d l2d_ref rows row_refs cols col_refs begin
+        # Build the problem
+        vlp = vlptype(
+            pointer_from_objref(l2d),
+            pointer_from_objref(rows), 
+            pointer_from_objref(cols), 
+            opt_dir,
+            DEFAULT,
+            C_NULL,
+            C_NULL,
+            nz,
+            nzobj,
+            n, m, q, 0
+        )
+    end
+
+    return vlp, (l2d, l2d_ref, rows, row_refs, cols, col_refs)
 end
 
-function _matrix2list2d(A::AbstractMatrix{<:Real})
-    A_sparse = sparse(A)
-    I, J, V = findnz(A_sparse)
+function _create_vlp(
+    P::AbstractMatrix{<:Real},
+    B::AbstractMatrix{<:Real},
+    a::AbstractVector{<:Real},
+    b::AbstractVector{<:Real},
+    l::AbstractVector{<:Real},
+    s::AbstractVector{<:Real};
+    opt_dir::Int = 1,
+    cone_gen::cone_gen_type = DEFAULT,
+    generator_matrix::AbstractMatrix{<:Real}, 
+    duality_vector::AbstractVector{<:Real}, 
+)
+    # Getting the dimensions.
+    m, n, q = size(B)..., size(P, 1)
+    nz, nzobj = sum(B .!= 0), sum(P.!= 0)
 
-    idx1 = Vector{lp_idx}(lp_idx.(I .- 1))
-    idx2 = Vector{lp_idx}(lp_idx.(J .- 1))
-    data = Vector{Cdouble}(Cdouble.(V))
+    # Building A_ext for vlptype
+    A_ext = [B zeros(m, q); -P LinearAlgebra.I(q)]
+    l2d, l2d_ref = _matrix2list2d(A_ext)
 
-    l2d = list2d(
-        Csize_t(length(data)),
-        pointer(idx1),
-        pointer(idx2),
-        pointer(data)
-    )
+    # Building the rows and cols for vlptype
+    rows, row_refs = _vecs2boundlist(a, b)
+    cols, col_refs = _vecs2boundlist(l, s)
 
-    return l2d
-end
-
-function _vector2list1d(v::AbstractVector{<:Real})
-    v_sparse = sparse(v)
-    I, V = findnz(v_sparse)
-
-    idx = Vector{lp_idx}(lp_idx.(I .- 1))
-    data = Vector{Cdouble}(Cdouble.(V))
-
-    l1d = list1d(
-        lp_idx(length(V)),
-        pointer(idx),
-        pointer(data)
-    )
-
-    return l1d
-end
-
-function _vecs2rows(lb::AbstractVector{<:Real}, ub::AbstractVector{<:Real})
-    @assert length(lb) == length(ub)
-    m = length(lb)
-
-    idx = Vector{lp_idx}(lp_idx.(0:m-1))
-    lb_ = Vector{Cdouble}(Cdouble.(lb))
-    ub_ = Vector{Cdouble}(Cdouble.(ub))
-    typ = Vector{Cchar}(fill('d', m))
-
-    rows = boundlist(
-        lp_idx(m),
-        pointer(idx),
-        pointer(lb_),
-        pointer(ub_),
-        pointer(typ)
-    )
-
-    return rows
-end
-
-function _vecs2cols(lb::AbstractVector{<:Real}, ub::AbstractVector{<:Real})
-    @assert length(lb) == length(ub)
-    n = length(lb)
-
-    idx = Vector{lp_idx}(lp_idx.(0:n-1))
-    lb_ = Vector{Cdouble}(Cdouble.(lb))
-    ub_ = Vector{Cdouble}(Cdouble.(ub))
-    typ = Vector{Cchar}(fill('d', n))
-
-    cols = boundlist(
-        lp_idx(n),
-        pointer(idx),
-        pointer(lb_),
-        pointer(ub_),
-        pointer(typ)
-    )
-
-    return cols
+    # Get a default opttype
+    opt = _get_default_opt()
+    
+    GC.@preserve l2d l2d_ref rows row_refs cols col_refs begin
+        # Build the problem
+        vlp = vlptype(
+            pointer_from_objref(l2d),
+            pointer_from_objref(rows), 
+            pointer_from_objref(cols), 
+            opt_dir,
+            DEFAULT,
+            C_NULL,
+            C_NULL,
+            nz,
+            nzobj,
+            n, m, q, 0
+        )
+    end
 end
 
 end
