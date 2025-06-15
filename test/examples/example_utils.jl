@@ -92,18 +92,3 @@ _extract_generator_matrix_from_file(filename, nrows, ncols) = _extract_matrix_fr
 
 _extract_row_bounds(filename, s) = _extract_bounds(filename, "i", s)
 _extract_col_bounds(filename, s) = _extract_bounds(filename, "j", s)
-
-fname = "test/examples/ex05.vlp"
-
-opt_dir, m, n, nz, q, nzobj, ctype, n_gen, nzgen = _extract_problem_info_from_file(fname)
-
-P = _extract_objective_matrix_from_file(fname, q, n)
-B = _extract_constraint_matrix_from_file(fname, m, n)
-C = _extract_generator_matrix_from_file(fname, q, n_gen)
-a, b = _extract_row_bounds(fname, m)
-l, s = _extract_col_bounds(fname, n)
-c = _extract_duality_vec(fname, q)
-
-Bensolve.molp_solve(P, B, a, b, l, s)
-status, upper_img, _ = Bensolve.vlp_solve(P, B, a, b, l, s, C, c, 1, Bensolve.CONE)
-upper_img
