@@ -92,7 +92,7 @@ function vlp_solve(
     generator_matrix::AbstractMatrix{<:Real},
     duality_vector::AbstractVector{<:Real},
     opt_dir::Int = 1,
-    cone_gen::cone_gen_type = DEFAULT,
+    ctype::Int = 2,
 )
     # Getting the dimensions.
     m, n, q = size(B)..., size(P, 1)
@@ -107,6 +107,8 @@ function vlp_solve(
     cols, col_refs = _vecs2boundlist(l, s)
 
     n_gen = size(generator_matrix, 2)
+
+    cone_gen = cone_gen_type(ctype)
 
     gen = eltype(generator_matrix)[]
     if cone_gen in [CONE, DUALCONE]
@@ -149,7 +151,6 @@ function vlp_solve(
             # Prepare to solve
             lp_init(vlp_ref)
             elapsed_time = @elapsed ret = alg(sol, vlp_ref, opt) # need to handle when ret != 0
-            dump(sol)
             if ret > 0
                 write_log_file(
                     vlp_ref,
