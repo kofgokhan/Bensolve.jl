@@ -19,7 +19,7 @@ include("functional_interface.jl")
 include("MOI_wrapper/MOI_wrapper.jl")
 
 function _load_adj_inc_info(filename)
-    dict = Dict{Int, Vector{Int}}()
+    dict = Dict{Int,Vector{Int}}()
     open(filename) do f
         for (i, l) in enumerate(eachline(f))
             id = i - 1

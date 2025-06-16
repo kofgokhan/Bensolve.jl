@@ -4,13 +4,13 @@ using Test
 include("examples/example_utils.jl")
 
 @testset "Bensolve.jl using *.vlp files" begin
-    for i in 1:6
+    for i = 1:6
         0 == solve("examples/ex0$(i).vlp")
     end
 end
 
 @testset "Bensolve.jl using functional interface" begin
-    for i in 1:6
+    for i = 1:6
         filename = "test/examples/ex0$(i).vlp"
 
         opt_dir, m, n, nz, q, nzobj, cone... = _extract_problem_info_from_file(fname)

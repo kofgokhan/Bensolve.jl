@@ -71,7 +71,7 @@ function _extract_bounds(filename, designator, s)
 end
 
 function _extract_duality_vec(filename, s)
-    c = fill(1., s)
+    c = fill(1.0, s)
     open(filename) do f
         for line in eachline(f)
             desc, data... = split(strip(line))
@@ -86,9 +86,12 @@ function _extract_duality_vec(filename, s)
     return c
 end
 
-_extract_objective_matrix_from_file(filename, nrows, ncols) = _extract_matrix_from_file(filename, "o", nrows, ncols)
-_extract_constraint_matrix_from_file(filename, nrows, ncols) = _extract_matrix_from_file(filename, "a", nrows, ncols)
-_extract_generator_matrix_from_file(filename, nrows, ncols) = _extract_matrix_from_file(filename, "k", nrows, ncols)
+_extract_objective_matrix_from_file(filename, nrows, ncols) =
+    _extract_matrix_from_file(filename, "o", nrows, ncols)
+_extract_constraint_matrix_from_file(filename, nrows, ncols) =
+    _extract_matrix_from_file(filename, "a", nrows, ncols)
+_extract_generator_matrix_from_file(filename, nrows, ncols) =
+    _extract_matrix_from_file(filename, "k", nrows, ncols)
 
 _extract_row_bounds(filename, s) = _extract_bounds(filename, "i", s)
 _extract_col_bounds(filename, s) = _extract_bounds(filename, "j", s)

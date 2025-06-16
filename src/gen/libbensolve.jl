@@ -1,9 +1,9 @@
 using CEnum
 
-const __jmp_buf = NTuple{8, Clong}
+const __jmp_buf = NTuple{8,Clong}
 
 struct __sigset_t
-    __val::NTuple{16, Culong}
+    __val::NTuple{16,Culong}
 end
 
 struct __jmp_buf_tag
@@ -12,7 +12,7 @@ struct __jmp_buf_tag
     __saved_mask::__sigset_t
 end
 
-const jmp_buf = NTuple{1, __jmp_buf_tag}
+const jmp_buf = NTuple{1,__jmp_buf_tag}
 
 const lp_idx = Cint
 
@@ -50,7 +50,7 @@ const alg_type = _alg_type
 struct opttype
     bounded::Cint
     plot::Cint
-    filename::NTuple{256, Cchar}
+    filename::NTuple{256,Cchar}
     solution::pre_img_type
     format::format_type
     lp_method_phase0::lp_method_type
@@ -80,8 +80,44 @@ end
 
 const swap_type = _swap_type
 
-function cone_vertenum(prim, n_prim, dual, n_dual, prim_in, n_prim_in, dim, opt, output, swap)
-    ccall((:cone_vertenum, libbensolve), Cint, (Ptr{Ptr{Cdouble}}, Ptr{lp_idx}, Ptr{Ptr{Cdouble}}, Ptr{lp_idx}, Ptr{Cdouble}, Csize_t, Csize_t, Ptr{opttype}, cone_out_type, swap_type), prim, n_prim, dual, n_dual, prim_in, n_prim_in, dim, opt, output, swap)
+function cone_vertenum(
+    prim,
+    n_prim,
+    dual,
+    n_dual,
+    prim_in,
+    n_prim_in,
+    dim,
+    opt,
+    output,
+    swap,
+)
+    ccall(
+        (:cone_vertenum, libbensolve),
+        Cint,
+        (
+            Ptr{Ptr{Cdouble}},
+            Ptr{lp_idx},
+            Ptr{Ptr{Cdouble}},
+            Ptr{lp_idx},
+            Ptr{Cdouble},
+            Csize_t,
+            Csize_t,
+            Ptr{opttype},
+            cone_out_type,
+            swap_type,
+        ),
+        prim,
+        n_prim,
+        dual,
+        n_dual,
+        prim_in,
+        n_prim_in,
+        dim,
+        opt,
+        output,
+        swap,
+    )
 end
 
 @cenum _sol_status_type::UInt32 begin
@@ -165,27 +201,69 @@ mutable struct vlptype
 end
 
 function alg(sol, vlp, opt)
-    ccall((:alg, libbensolve), Cint, (Ptr{soltype}, Ptr{vlptype}, Ptr{opttype}), sol, vlp, opt)
+    ccall(
+        (:alg, libbensolve),
+        Cint,
+        (Ptr{soltype}, Ptr{vlptype}, Ptr{opttype}),
+        sol,
+        vlp,
+        opt,
+    )
 end
 
 function phase0(sol, vlp, opt)
-    ccall((:phase0, libbensolve), Cvoid, (Ptr{soltype}, Ptr{vlptype}, Ptr{opttype}), sol, vlp, opt)
+    ccall(
+        (:phase0, libbensolve),
+        Cvoid,
+        (Ptr{soltype}, Ptr{vlptype}, Ptr{opttype}),
+        sol,
+        vlp,
+        opt,
+    )
 end
 
 function phase1_primal(sol, vlp, opt)
-    ccall((:phase1_primal, libbensolve), Cvoid, (Ptr{soltype}, Ptr{vlptype}, Ptr{opttype}), sol, vlp, opt)
+    ccall(
+        (:phase1_primal, libbensolve),
+        Cvoid,
+        (Ptr{soltype}, Ptr{vlptype}, Ptr{opttype}),
+        sol,
+        vlp,
+        opt,
+    )
 end
 
 function phase2_primal(sol, vlp, opt)
-    ccall((:phase2_primal, libbensolve), Cvoid, (Ptr{soltype}, Ptr{vlptype}, Ptr{opttype}), sol, vlp, opt)
+    ccall(
+        (:phase2_primal, libbensolve),
+        Cvoid,
+        (Ptr{soltype}, Ptr{vlptype}, Ptr{opttype}),
+        sol,
+        vlp,
+        opt,
+    )
 end
 
 function phase1_dual(sol, vlp, opt)
-    ccall((:phase1_dual, libbensolve), Cvoid, (Ptr{soltype}, Ptr{vlptype}, Ptr{opttype}), sol, vlp, opt)
+    ccall(
+        (:phase1_dual, libbensolve),
+        Cvoid,
+        (Ptr{soltype}, Ptr{vlptype}, Ptr{opttype}),
+        sol,
+        vlp,
+        opt,
+    )
 end
 
 function phase2_dual(sol, vlp, opt)
-    ccall((:phase2_dual, libbensolve), Cvoid, (Ptr{soltype}, Ptr{vlptype}, Ptr{opttype}), sol, vlp, opt)
+    ccall(
+        (:phase2_dual, libbensolve),
+        Cvoid,
+        (Ptr{soltype}, Ptr{vlptype}, Ptr{opttype}),
+        sol,
+        vlp,
+        opt,
+    )
 end
 
 function phase2_init(sol, vlp)
@@ -203,11 +281,29 @@ function string_fprint(filename, string)
 end
 
 function matrix_fprint(mat_arr, m, n, tda, filename, format)
-    ccall((:matrix_fprint, libbensolve), Cvoid, (Ptr{Cdouble}, Cint, Cint, Cint, Ptr{Cchar}, Ptr{Cchar}), mat_arr, m, n, tda, filename, format)
+    ccall(
+        (:matrix_fprint, libbensolve),
+        Cvoid,
+        (Ptr{Cdouble}, Cint, Cint, Cint, Ptr{Cchar}, Ptr{Cchar}),
+        mat_arr,
+        m,
+        n,
+        tda,
+        filename,
+        format,
+    )
 end
 
 function matrix_print(mat_arr, m, n, format)
-    ccall((:matrix_print, libbensolve), Cvoid, (Ptr{Cdouble}, Cint, Cint, Ptr{Cchar}), mat_arr, m, n, format)
+    ccall(
+        (:matrix_print, libbensolve),
+        Cvoid,
+        (Ptr{Cdouble}, Cint, Cint, Ptr{Cchar}),
+        mat_arr,
+        m,
+        n,
+        format,
+    )
 end
 
 function string_to_int(str, error_msg)
@@ -215,19 +311,46 @@ function string_to_int(str, error_msg)
 end
 
 function string_to_positive_int(str, error_msg)
-    ccall((:string_to_positive_int, libbensolve), Cint, (Ptr{Cchar}, Ptr{Cchar}), str, error_msg)
+    ccall(
+        (:string_to_positive_int, libbensolve),
+        Cint,
+        (Ptr{Cchar}, Ptr{Cchar}),
+        str,
+        error_msg,
+    )
 end
 
 function string_to_positive_double(str, error_msg)
-    ccall((:string_to_positive_double, libbensolve), Cdouble, (Ptr{Cchar}, Ptr{Cchar}), str, error_msg)
+    ccall(
+        (:string_to_positive_double, libbensolve),
+        Cdouble,
+        (Ptr{Cchar}, Ptr{Cchar}),
+        str,
+        error_msg,
+    )
 end
 
 function orthogonal_vector(mat_arr, dim, cidx)
-    ccall((:orthogonal_vector, libbensolve), Cvoid, (Ptr{Cdouble}, Cint, Cint), mat_arr, dim, cidx)
+    ccall(
+        (:orthogonal_vector, libbensolve),
+        Cvoid,
+        (Ptr{Cdouble}, Cint, Cint),
+        mat_arr,
+        dim,
+        cidx,
+    )
 end
 
 function is_equal(size, vec1, vec2, tol)
-    ccall((:is_equal, libbensolve), Cint, (lp_idx, Ptr{Cdouble}, Ptr{Cdouble}, Cdouble), size, vec1, vec2, tol)
+    ccall(
+        (:is_equal, libbensolve),
+        Cint,
+        (lp_idx, Ptr{Cdouble}, Ptr{Cdouble}, Cdouble),
+        size,
+        vec1,
+        vec2,
+        tol,
+    )
 end
 
 function is_zero(size, vec, tol)
@@ -251,7 +374,14 @@ function list1d_free(list)
 end
 
 function vector_to_list1d(list, vec_arr, n)
-    ccall((:vector_to_list1d, libbensolve), Cvoid, (Ptr{list1d}, Ptr{Cdouble}, Cint), list, vec_arr, n)
+    ccall(
+        (:vector_to_list1d, libbensolve),
+        Cvoid,
+        (Ptr{list1d}, Ptr{Cdouble}, Cint),
+        list,
+        vec_arr,
+        n,
+    )
 end
 
 function list1d_print(list, size)
@@ -267,7 +397,14 @@ function list2d_calloc(size)
 end
 
 function list2d_init_idx(list, nrows, ncols)
-    ccall((:list2d_init_idx, libbensolve), Cvoid, (Ptr{list2d}, lp_idx, lp_idx), list, nrows, ncols)
+    ccall(
+        (:list2d_init_idx, libbensolve),
+        Cvoid,
+        (Ptr{list2d}, lp_idx, lp_idx),
+        list,
+        nrows,
+        ncols,
+    )
 end
 
 function list2d_free(list)
@@ -287,7 +424,13 @@ function boundlist_calloc(size, type)
 end
 
 function boundlist_init_idx(list, firstidx)
-    ccall((:boundlist_init_idx, libbensolve), Cvoid, (Ptr{boundlist}, lp_idx), list, firstidx)
+    ccall(
+        (:boundlist_init_idx, libbensolve),
+        Cvoid,
+        (Ptr{boundlist}, lp_idx),
+        list,
+        firstidx,
+    )
 end
 
 function boundlist_free(list)
@@ -353,7 +496,14 @@ function lp_set_mat(i, A)
 end
 
 function lp_set_mat_row(i, list, ridx)
-    ccall((:lp_set_mat_row, libbensolve), Cvoid, (Csize_t, Ptr{list1d}, lp_idx), i, list, ridx)
+    ccall(
+        (:lp_set_mat_row, libbensolve),
+        Cvoid,
+        (Csize_t, Ptr{list1d}, lp_idx),
+        i,
+        list,
+        ridx,
+    )
 end
 
 function lp_clear_obj_coeffs(i)
@@ -379,19 +529,55 @@ function lp_solve(i)
 end
 
 function lp_primal_solution_rows(i, x, firstidx, size, sign)
-    ccall((:lp_primal_solution_rows, libbensolve), Cvoid, (Csize_t, Ptr{Cdouble}, lp_idx, lp_idx, Cdouble), i, x, firstidx, size, sign)
+    ccall(
+        (:lp_primal_solution_rows, libbensolve),
+        Cvoid,
+        (Csize_t, Ptr{Cdouble}, lp_idx, lp_idx, Cdouble),
+        i,
+        x,
+        firstidx,
+        size,
+        sign,
+    )
 end
 
 function lp_primal_solution_cols(i, x, firstidx, size, sign)
-    ccall((:lp_primal_solution_cols, libbensolve), Cvoid, (Csize_t, Ptr{Cdouble}, lp_idx, lp_idx, Cdouble), i, x, firstidx, size, sign)
+    ccall(
+        (:lp_primal_solution_cols, libbensolve),
+        Cvoid,
+        (Csize_t, Ptr{Cdouble}, lp_idx, lp_idx, Cdouble),
+        i,
+        x,
+        firstidx,
+        size,
+        sign,
+    )
 end
 
 function lp_dual_solution_rows(i, u, firstidx, size, sign)
-    ccall((:lp_dual_solution_rows, libbensolve), Cvoid, (Csize_t, Ptr{Cdouble}, lp_idx, lp_idx, Cdouble), i, u, firstidx, size, sign)
+    ccall(
+        (:lp_dual_solution_rows, libbensolve),
+        Cvoid,
+        (Csize_t, Ptr{Cdouble}, lp_idx, lp_idx, Cdouble),
+        i,
+        u,
+        firstidx,
+        size,
+        sign,
+    )
 end
 
 function lp_dual_solution_cols(i, u, firstidx, size, sign)
-    ccall((:lp_dual_solution_cols, libbensolve), Cvoid, (Csize_t, Ptr{Cdouble}, lp_idx, lp_idx, Cdouble), i, u, firstidx, size, sign)
+    ccall(
+        (:lp_dual_solution_cols, libbensolve),
+        Cvoid,
+        (Csize_t, Ptr{Cdouble}, lp_idx, lp_idx, Cdouble),
+        i,
+        u,
+        firstidx,
+        size,
+        sign,
+    )
 end
 
 function lp_obj_val(i)
@@ -479,7 +665,7 @@ end
 
 
 struct poly_args
-    data::NTuple{392, UInt8}
+    data::NTuple{392,UInt8}
 end
 
 function Base.getproperty(x::Ptr{poly_args}, f::Symbol)
@@ -518,7 +704,13 @@ struct permutation
 end
 
 function poly__initialise_permutation(arg1, arg2)
-    ccall((:poly__initialise_permutation, libbensolve), Cvoid, (Ptr{polytope}, Ptr{permutation}), arg1, arg2)
+    ccall(
+        (:poly__initialise_permutation, libbensolve),
+        Cvoid,
+        (Ptr{polytope}, Ptr{permutation}),
+        arg1,
+        arg2,
+    )
 end
 
 function poly__kill_permutation(arg1)
@@ -526,23 +718,62 @@ function poly__kill_permutation(arg1)
 end
 
 function poly__vrtx2file(arg1, arg2, arg3, arg4)
-    ccall((:poly__vrtx2file, libbensolve), Cvoid, (Ptr{polytope}, Ptr{permutation}, Ptr{Cchar}, Ptr{Cchar}), arg1, arg2, arg3, arg4)
+    ccall(
+        (:poly__vrtx2file, libbensolve),
+        Cvoid,
+        (Ptr{polytope}, Ptr{permutation}, Ptr{Cchar}, Ptr{Cchar}),
+        arg1,
+        arg2,
+        arg3,
+        arg4,
+    )
 end
 
 function poly__primg2file(arg1, arg2, arg3, arg4)
-    ccall((:poly__primg2file, libbensolve), Cvoid, (Ptr{polytope}, Ptr{permutation}, Ptr{Cchar}, Ptr{Cchar}), arg1, arg2, arg3, arg4)
+    ccall(
+        (:poly__primg2file, libbensolve),
+        Cvoid,
+        (Ptr{polytope}, Ptr{permutation}, Ptr{Cchar}, Ptr{Cchar}),
+        arg1,
+        arg2,
+        arg3,
+        arg4,
+    )
 end
 
 function poly__adj2file(arg1, arg2, arg3, arg4)
-    ccall((:poly__adj2file, libbensolve), Cvoid, (Ptr{polytope}, Ptr{permutation}, Ptr{Cchar}, Ptr{Cchar}), arg1, arg2, arg3, arg4)
+    ccall(
+        (:poly__adj2file, libbensolve),
+        Cvoid,
+        (Ptr{polytope}, Ptr{permutation}, Ptr{Cchar}, Ptr{Cchar}),
+        arg1,
+        arg2,
+        arg3,
+        arg4,
+    )
 end
 
 function poly__inc2file(arg1, arg2, arg3, arg4, arg5)
-    ccall((:poly__inc2file, libbensolve), Cvoid, (Ptr{polytope}, Ptr{permutation}, Ptr{permutation}, Ptr{Cchar}, Ptr{Cchar}), arg1, arg2, arg3, arg4, arg5)
+    ccall(
+        (:poly__inc2file, libbensolve),
+        Cvoid,
+        (Ptr{polytope}, Ptr{permutation}, Ptr{permutation}, Ptr{Cchar}, Ptr{Cchar}),
+        arg1,
+        arg2,
+        arg3,
+        arg4,
+        arg5,
+    )
 end
 
 function poly__set_default_args(args, dim)
-    ccall((:poly__set_default_args, libbensolve), Cvoid, (Ptr{poly_args}, Csize_t), args, dim)
+    ccall(
+        (:poly__set_default_args, libbensolve),
+        Cvoid,
+        (Ptr{poly_args}, Csize_t),
+        args,
+        dim,
+    )
 end
 
 function poly__initialise(arg1)
@@ -554,11 +785,27 @@ function poly__kill(arg1)
 end
 
 function poly__cut(arg1, arg2, arg3)
-    ccall((:poly__cut, libbensolve), Cvoid, (Ptr{polytope}, Csize_t, Ptr{Cdouble}), arg1, arg2, arg3)
+    ccall(
+        (:poly__cut, libbensolve),
+        Cvoid,
+        (Ptr{polytope}, Csize_t, Ptr{Cdouble}),
+        arg1,
+        arg2,
+        arg3,
+    )
 end
 
 function poly__poly_initialise(arg1, arg2, arg3, arg4, arg5)
-    ccall((:poly__poly_initialise, libbensolve), Cvoid, (Ptr{polytope}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Csize_t}), arg1, arg2, arg3, arg4, arg5)
+    ccall(
+        (:poly__poly_initialise, libbensolve),
+        Cvoid,
+        (Ptr{polytope}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Csize_t}),
+        arg1,
+        arg2,
+        arg3,
+        arg4,
+        arg5,
+    )
 end
 
 function poly__add_vrtx(arg1)
@@ -594,7 +841,14 @@ function add_lst_elem(arg1, arg2)
 end
 
 function edge_test(arg1, arg2, arg3)
-    ccall((:edge_test, libbensolve), Cint, (Ptr{polytope}, Csize_t, Csize_t), arg1, arg2, arg3)
+    ccall(
+        (:edge_test, libbensolve),
+        Cint,
+        (Ptr{polytope}, Csize_t, Csize_t),
+        arg1,
+        arg2,
+        arg3,
+    )
 end
 
 function poly__update_adjacence(arg1)
@@ -602,7 +856,14 @@ function poly__update_adjacence(arg1)
 end
 
 function vrtx_cpy(arg1, arg2, arg3)
-    ccall((:vrtx_cpy, libbensolve), Cvoid, (Ptr{polytope}, Csize_t, Csize_t), arg1, arg2, arg3)
+    ccall(
+        (:vrtx_cpy, libbensolve),
+        Cvoid,
+        (Ptr{polytope}, Csize_t, Csize_t),
+        arg1,
+        arg2,
+        arg3,
+    )
 end
 
 function poly__swap(arg1, arg2)
@@ -618,7 +879,16 @@ function poly__polyck(arg1)
 end
 
 function bslv__normalise(arg1, arg2, arg3, arg4, arg5)
-    ccall((:bslv__normalise, libbensolve), Cdouble, (Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Csize_t, Csize_t), arg1, arg2, arg3, arg4, arg5)
+    ccall(
+        (:bslv__normalise, libbensolve),
+        Cdouble,
+        (Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Csize_t, Csize_t),
+        arg1,
+        arg2,
+        arg3,
+        arg4,
+        arg5,
+    )
 end
 
 struct csatype
@@ -627,28 +897,58 @@ struct csatype
     fp::Ptr{Libc.FILE}
     count::Cint
     c::Cint
-    field::NTuple{256, Cchar}
+    field::NTuple{256,Cchar}
     empty::Cint
     nonint::Cint
-    msg::NTuple{256, Cchar}
+    msg::NTuple{256,Cchar}
     error::Cint
     warning::Cint
 end
 
 function vlp_init(filename, vlp, opt)
-    ccall((:vlp_init, libbensolve), Cint, (Ptr{Cchar}, Ptr{vlptype}, Ptr{opttype}), filename, vlp, opt)
+    ccall(
+        (:vlp_init, libbensolve),
+        Cint,
+        (Ptr{Cchar}, Ptr{vlptype}, Ptr{opttype}),
+        filename,
+        vlp,
+        opt,
+    )
 end
 
 function set_opt(opt, argc, argv)
-    ccall((:set_opt, libbensolve), Cint, (Ptr{opttype}, Cint, Ptr{Ptr{Cchar}}), opt, argc, argv)
+    ccall(
+        (:set_opt, libbensolve),
+        Cint,
+        (Ptr{opttype}, Cint, Ptr{Ptr{Cchar}}),
+        opt,
+        argc,
+        argv,
+    )
 end
 
 function write_log_file(vlp, sol, opt, elapsedTime, lp_num)
-    ccall((:write_log_file, libbensolve), Cint, (Ptr{vlptype}, Ptr{soltype}, Ptr{opttype}, Cdouble, Cint), vlp, sol, opt, elapsedTime, lp_num)
+    ccall(
+        (:write_log_file, libbensolve),
+        Cint,
+        (Ptr{vlptype}, Ptr{soltype}, Ptr{opttype}, Cdouble, Cint),
+        vlp,
+        sol,
+        opt,
+        elapsedTime,
+        lp_num,
+    )
 end
 
 function display_info(opt, elapsedTime, lp_num)
-    ccall((:display_info, libbensolve), Cvoid, (Ptr{opttype}, Cdouble, Cint), opt, elapsedTime, lp_num)
+    ccall(
+        (:display_info, libbensolve),
+        Cvoid,
+        (Ptr{opttype}, Cdouble, Cint),
+        opt,
+        elapsedTime,
+        lp_num,
+    )
 end
 
 function vlp_free(vlp)
@@ -656,7 +956,14 @@ function vlp_free(vlp)
 end
 
 function sol_init(sol, vlp, opt)
-    ccall((:sol_init, libbensolve), Cint, (Ptr{soltype}, Ptr{vlptype}, Ptr{opttype}), sol, vlp, opt)
+    ccall(
+        (:sol_init, libbensolve),
+        Cint,
+        (Ptr{soltype}, Ptr{vlptype}, Ptr{opttype}),
+        sol,
+        vlp,
+        opt,
+    )
 end
 
 function sol_free(sol)

@@ -1,13 +1,6 @@
 import MathOptInterface as MOI
 
-@enum(
-    _VariableBound, 
-    _LOWER, 
-    _UPPER, 
-    _DOUBLE, 
-    _FREE, 
-    _FIXED, 
-)
+@enum(_VariableBound, _LOWER, _UPPER, _DOUBLE, _FREE, _FIXED,)
 
 _bounds(s::MOI.GreaterThan{Float64}) = (s.lower, Inf)
 _bounds(s::MOI.LessThan{Float64}) = (-Inf, s.upper)
@@ -53,42 +46,42 @@ end
 mutable struct Optimizer <: MOI.AbstractOptimizer
     map::MOI.IndexMap
     ctype::cone_gen_type
-    upper_img::Dict{_SolutionIndex, _Solution}
-    lower_img::Dict{_SolutionIndex, _Solution}
-    options::Dict{String, String}
+    upper_img::Dict{_SolutionIndex,_Solution}
+    lower_img::Dict{_SolutionIndex,_Solution}
+    options::Dict{String,String}
     status::sol_status_type
     solve_time::Float64
 
     Optimizer() = new(
-        MOI.IndexMap(), 
-        DEFAULT, 
-        Dict{_SolutionIndex, _Solution}(), 
-        Dict{_SolutionIndex, _Solution}(), 
-        Dict{String, String}(), 
-        VLP_NOSTATUS, 
-        0.0
+        MOI.IndexMap(),
+        DEFAULT,
+        Dict{_SolutionIndex,_Solution}(),
+        Dict{_SolutionIndex,_Solution}(),
+        Dict{String,String}(),
+        VLP_NOSTATUS,
+        0.0,
     )
 end
 
 function MOI.empty!(optimizer::Optimizer)
     optimizer.map = MOI.IndexMap()
     optimizer.ctype = DEFAULT
-    optimizer.upper_img = Dict{_SolutionIndex, _Solution}()
-    optimizer.lower_img = Dict{_SolutionIndex, _Solution}()
-    optimizer.options = Dict{String, String}()
+    optimizer.upper_img = Dict{_SolutionIndex,_Solution}()
+    optimizer.lower_img = Dict{_SolutionIndex,_Solution}()
+    optimizer.options = Dict{String,String}()
     optimizer.status = VLP_NOSTATUS
     optimizer.solve_time = 0.0
     return
 end
 
 function MOI.is_empty(optimizer::Optimizer)
-    return isempty(optimizer.map) && 
-        optimizer.ctype == DEFAULT && 
-        isempty(optimizer.upper_img) && 
-        isempty(optimizer.lower_img) && 
-        isempty(optimizer.options) && 
-        optimizer.status == VLP_NOSTATUS && 
-        optimizer.solve_time == 0.0
+    return isempty(optimizer.map) &&
+           optimizer.ctype == DEFAULT &&
+           isempty(optimizer.upper_img) &&
+           isempty(optimizer.lower_img) &&
+           isempty(optimizer.options) &&
+           optimizer.status == VLP_NOSTATUS &&
+           optimizer.solve_time == 0.0
 end
 
 function MOI.optimize!(dest::Optimizer, src::MOI.ModelLike)
@@ -102,12 +95,12 @@ function MOI.optimize!(dest::Optimizer, src::MOI.ModelLike)
     end
     l, u = fill(-Inf, n), fill(Inf, n)
     for S in [
-        MOI.LessThan{Float64}, 
-        MOI.EqualTo{Float64}, 
-        MOI.GreaterThan{Float64}, 
-        MOI.Interval{Float64}, 
+        MOI.LessThan{Float64},
+        MOI.EqualTo{Float64},
+        MOI.GreaterThan{Float64},
+        MOI.Interval{Float64},
     ]
-        constraints = MOI.get(src, MOI.ListOfConstraintIndices{MOI.VariableIndex, S}())
+        constraints = MOI.get(src, MOI.ListOfConstraintIndices{MOI.VariableIndex,S}())
         for ci in constraints
             f = MOI.get(src, MOI.ConstraintFunction(), ci)
             s = MOI.get(src, MOI.ConstraintSet(), ci)
@@ -115,7 +108,9 @@ function MOI.optimize!(dest::Optimizer, src::MOI.ModelLike)
         end
     end
 
-    objs = MOI.Utilities.scalarize(MOI.get(src, MOI.ObjectiveFunction{MOI.VectorAffineFunction{Float64}}()))
+    objs = MOI.Utilities.scalarize(
+        MOI.get(src, MOI.ObjectiveFunction{MOI.VectorAffineFunction{Float64}}()),
+    )
     q = length(objs)
     objective_matrix = spzeros(Float64, q, n)
     obj_constants = zeros(q)
@@ -125,43 +120,44 @@ function MOI.optimize!(dest::Optimizer, src::MOI.ModelLike)
             objective_matrix[i, dest.map[term.variable].value] = term.coefficient
         end
     end
-    
+
     m = 0
     for S in [
-        MOI.LessThan{Float64}, 
-        MOI.EqualTo{Float64}, 
-        MOI.GreaterThan{Float64}, 
-        MOI.Interval{Float64}, 
+        MOI.LessThan{Float64},
+        MOI.EqualTo{Float64},
+        MOI.GreaterThan{Float64},
+        MOI.Interval{Float64},
     ]
-        constraints = MOI.get(src, MOI.ListOfConstraintIndices{MOI.ScalarAffineFunction{Float64}, S}())
+        constraints =
+            MOI.get(src, MOI.ListOfConstraintIndices{MOI.ScalarAffineFunction{Float64},S}())
         for ci in constraints
             m += 1
-            dest.map[ci] = MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}(m)
+            dest.map[ci] = MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64},S}(m)
         end
     end
     constraint_matrix = spzeros(Float64, m, n)
     a, b = fill(-Inf, m), fill(Inf, m)
-    for S in [
-        MOI.LessThan{Float64}, 
-        MOI.EqualTo{Float64}, 
-        MOI.GreaterThan{Float64}, 
-    ]
-        constraints = MOI.get(src, MOI.ListOfConstraintIndices{MOI.ScalarAffineFunction{Float64}, S}())
+    for S in [MOI.LessThan{Float64}, MOI.EqualTo{Float64}, MOI.GreaterThan{Float64}]
+        constraints =
+            MOI.get(src, MOI.ListOfConstraintIndices{MOI.ScalarAffineFunction{Float64},S}())
         for ci in constraints
             f = MOI.get(src, MOI.ConstraintFunction(), ci)
             for term in f.terms
-                constraint_matrix[dest.map[ci].value, dest.map[term.variable].value] = term.coefficient
+                constraint_matrix[dest.map[ci].value, dest.map[term.variable].value] =
+                    term.coefficient
             end
             s = MOI.get(src, MOI.ConstraintSet(), ci)
             a[dest.map[ci].value], b[dest.map[ci].value] = _bounds(s)
         end
     end
     status, upper_img, lower_img, solve_time = molp_solve(
-        objective_matrix, 
-        constraint_matrix, 
-        a, b, 
-        l, u, 
-        sense == MOI.MIN_SENSE ? 1 : -1
+        objective_matrix,
+        constraint_matrix,
+        a,
+        b,
+        l,
+        u,
+        sense == MOI.MIN_SENSE ? 1 : -1,
     )
     dest.status = status
     dest.upper_img = upper_img
@@ -174,9 +170,9 @@ end
 MOI.get(::Optimizer, ::MOI.SolverName) = "Bensolve"
 
 function MOI.supports_constraint(
-    ::Optimizer, 
-    ::Type{MOI.VariableIndex}, 
-    ::Type{<:Union{MOI.LessThan,MOI.GreaterThan,MOI.EqualTo}}, 
+    ::Optimizer,
+    ::Type{MOI.VariableIndex},
+    ::Type{<:Union{MOI.LessThan,MOI.GreaterThan,MOI.EqualTo}},
 )
     return true
 end
@@ -191,13 +187,7 @@ end
 function MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.ScalarAffineFunction{Float64}},
-    ::Type{
-        <:Union{
-            MOI.EqualTo{Float64},
-            MOI.LessThan{Float64},
-            MOI.GreaterThan{Float64},
-        },
-    },
+    ::Type{<:Union{MOI.EqualTo{Float64},MOI.LessThan{Float64},MOI.GreaterThan{Float64}}},
 )
     return true
 end
@@ -299,25 +289,18 @@ function MOI.get(model::Optimizer, ::MOI.SolveTimeSec)
     return model.solve_time
 end
 
-function MOI.get(
-    model::Optimizer,
-    attr::MOI.VariablePrimal,
-    x::MOI.VariableIndex,
-)
+function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, x::MOI.VariableIndex)
     model.upper_img[attr.result_index].x[model.map[x]]
 end
 
 function MOI.get(
     model::Optimizer,
     attr::MOI.ConstraintDual,
-    ci::MOI.ConstraintIndex{<:MOI.AbstractVectorFunction}
+    ci::MOI.ConstraintIndex{<:MOI.AbstractVectorFunction},
 )
     return model.lower_img[attr.result_index][model.map[ci]]
 end
 
-function MOI.get(
-    model::Optimizer,
-    attr::MOI.DualObjectiveValue,
-)
+function MOI.get(model::Optimizer, attr::MOI.DualObjectiveValue)
     return model.lower_img[attr.result_index]
 end
