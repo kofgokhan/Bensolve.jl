@@ -52,6 +52,7 @@ end
 
 mutable struct Optimizer <: MOI.AbstractOptimizer
     map::MOI.IndexMap
+    ctype::cone_gen_type
     upper_img::Dict{_SolutionIndex, _Solution}
     lower_img::Dict{_SolutionIndex, _Solution}
     options::Dict{String, String}
@@ -60,6 +61,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     Optimizer() = new(
         MOI.IndexMap(), 
+        DEFAULT, 
         Dict{_SolutionIndex, _Solution}(), 
         Dict{_SolutionIndex, _Solution}(), 
         Dict{String, String}(), 
@@ -70,6 +72,7 @@ end
 
 function MOI.empty!(optimizer::Optimizer)
     optimizer.map = MOI.IndexMap()
+    optimizer.ctype = DEFAULT
     optimizer.upper_img = Dict{_SolutionIndex, _Solution}()
     optimizer.lower_img = Dict{_SolutionIndex, _Solution}()
     optimizer.options = Dict{String, String}()
@@ -79,8 +82,8 @@ function MOI.empty!(optimizer::Optimizer)
 end
 
 function MOI.is_empty(optimizer::Optimizer)
-    # return isempty(model.vertices) && isempty(model.directions) && isempty(model.options)
     return isempty(optimizer.map) && 
+        optimizer.ctype == DEFAULT && 
         isempty(optimizer.upper_img) && 
         isempty(optimizer.lower_img) && 
         isempty(optimizer.options) && 
@@ -128,14 +131,14 @@ function MOI.optimize!(dest::Optimizer, src::MOI.ModelLike)
         MOI.LessThan{Float64}, 
         MOI.EqualTo{Float64}, 
         MOI.GreaterThan{Float64}, 
-        ]
+        MOI.Interval{Float64}, 
+    ]
         constraints = MOI.get(src, MOI.ListOfConstraintIndices{MOI.ScalarAffineFunction{Float64}, S}())
-        for ci in enumerate(constraints)
+        for ci in constraints
             m += 1
             dest.map[ci] = MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}(m)
         end
     end
-    @info m
     constraint_matrix = spzeros(Float64, m, n)
     a, b = fill(-Inf, m), fill(Inf, m)
     for S in [
@@ -153,13 +156,6 @@ function MOI.optimize!(dest::Optimizer, src::MOI.ModelLike)
             a[dest.map[ci].value], b[dest.map[ci].value] = _bounds(s)
         end
     end
-    @info "n: ", n
-    @info "P: ", Matrix(objective_matrix)
-    @info "B: ", Matrix(constraint_matrix)
-    @info "a: ", Vector(a)
-    @info "b: ", Vector(b)
-    @info "l: ", Vector(l)
-    @info "u: ", Vector(u)
     status, upper_img, lower_img, solve_time = molp_solve(
         objective_matrix, 
         constraint_matrix, 
@@ -228,8 +224,17 @@ function MOI.set(model::Optimizer, ::DualityVector, c::AbstractVector{<:Real})
     return
 end
 
-function MOI.get(model::Optimizer, ::DualityVector)
-    return model.duality_vector
+struct ConeType <: MOI.AbstractModelAttribute end
+
+MOI.supports(::Optimizer, ::ConeType) = true
+
+function MOI.set(model::Optimizer, ::ConeType, ctype::cone_gen_type)
+    model.ctype = ctype
+    return
+end
+
+function MOI.get(model::Optimizer, ::ConeType)
+    return model.ctype
 end
 
 function MOI.get(model::Optimizer, ::MOI.DualStatus)
@@ -306,13 +311,13 @@ function MOI.get(
     model::Optimizer,
     attr::MOI.ConstraintDual,
     ci::MOI.ConstraintIndex{<:MOI.AbstractVectorFunction}
-)::Vector{T} where {T<:Real}
+)
     return model.lower_img[attr.result_index][model.map[ci]]
 end
 
 function MOI.get(
     model::Optimizer,
     attr::MOI.DualObjectiveValue,
-)::Union{T,Vector{T}} where {T<:Real}
+)
     return model.lower_img[attr.result_index]
 end

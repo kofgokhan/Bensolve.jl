@@ -11,9 +11,9 @@ function _extract_problem_info_from_file(filename)
                 m, n, nz, q, nzobj, cone... = something.(tryparse.(Int, vlp), vlp)
                 if !isempty(cone)
                     cone_type, n_gen, nz_gen = cone
-                    return opt_dir, m, n, nz, q, nzobj, cone_type, n_gen, nz_gen
+                    return opt_dir, m, n, q, cone_type, n_gen, nz_gen
                 end
-                return opt_dir, m, n, nz, q, nzobj
+                return opt_dir, m, n, q
             end
         end
     end
