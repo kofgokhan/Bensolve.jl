@@ -159,6 +159,10 @@ model = Model(Bensolve.Optimizer)
 @constraint(model, a .<= B * x .<= b)
 @objective(model, Min, P * x)
 optimize!(model)
+
+status = termination_status(model)
+N = result_count(model) # number of vertices and extreme directions of the upper image
+objective_value(model, result = 1) # first vertex / extreme direction
 ```
 
 # Citation policy
