@@ -122,9 +122,7 @@ x_1 + x_2
 ```
 using Bensolve
 
-problem = load_problem("ex01.vlp")
-
-bensolve(problem)
+status, upper_img, lower_img, solve_time = solve("ex01.vlp")
 ```
 
 Alternatively, you can pass in the parameters of the problem yourself.
@@ -140,9 +138,25 @@ B = [
     1 2
 ]
 
+a = [-Inf, -Inf]
 b = [6, 6]
 
-bensolve(P, B, b)
+l = [0, 0]
+s = [Inf, Inf]
+
+molp_solve(P, B, a, b, l, s)
+```
+
+Using JuMP:
+
+```
+using JuMP, Bensolve
+
+model = Model(Bensolve.Optimizer)
+@variable(model, l[i] <= x[i = 1:n] <= u[i])
+@constraint(model, a .<= B * x .<= b)
+@objective(model, Min, P * x)
+optimize!(model)
 ```
 
 # Citation policy
