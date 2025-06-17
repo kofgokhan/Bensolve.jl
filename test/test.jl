@@ -22,6 +22,30 @@ function test_problem(filename)
     sense = opt_dir == 1 ? MOI.MIN_SENSE : MOI:MAX_SENSE
     @objective(model, sense, P * x)
     if !isempty(cone)
+        ctype, n_gen = cone
+        C = _extract_generator_matrix_from_file(filename, q, n_gen)
+        c = _extract_duality_vec(filename, q)
+        MOI.set(model, Bensolve.OrderingCone, C)
+        MOI.set(model, Bensolve.DualityVector, c)
+        MOI.set(model, Bensolve.ConeType, if ctype == "CONE"
+            Bensolve.CONE
+        elseif ctype == "DUALCONE"
+            Bensolve.DUALCONE
+        else
+            Bensolve.DEFAULT
+        end)
+    end
+    optimize!(model)
+    return
+end
+
+function test_problem(filename)
+    opt_dir, m, n, q, cone... = _extract_problem_info_from_file(filename)
+    P = _extract_objective_matrix_from_file(filename, q, n)
+    B = _extract_constraint_matrix_from_file(filename, m, n)
+    a, b = _extract_row_bounds(filename, m)
+    l, u = _extract_col_bounds(filename, n)
+    if !isempty(cone)
         ctype, C, c = cone
         MOI.set(model, Bensolve.OrderingCone, C)
         MOI.set(model, Bensolve.DualityVector, c)
