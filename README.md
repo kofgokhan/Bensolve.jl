@@ -9,7 +9,7 @@ For the theoretical background of this program, the reader is referred to [8, 6]
 The present version utilizes the GNU Linear Programming Kit (GLPK). 
 
 Bensolve assumes the following formulation of a MOLP:
-$$
+```math
 \begin{align}
 
 \begin{split}
@@ -41,13 +41,13 @@ l_n & \le x_n \le s_n
 \end{split}
 
 \end{align}
-$$
+```
 
 # Vector Linear Program
 In this more general setting, the minimization (or maximization) in (1) is defined with
 respect to a partial ordering $\le_C$ induced by a polyhedral cone $C \subseteq \mathbb{R}^q$, that is
 
-$$
+```math
 \begin{align}
 
 \begin{pmatrix}
@@ -61,15 +61,13 @@ z_1 - y_1 \\ z_2 - y_2 \\ \dots \\ z_q - y_q
 \end{pmatrix} \in C.
 
 \end{align}
-$$
-
-
+```
 
 Bensolve assumes that $C$ has a non-empty interior and contains no lines. The polyhedral cone $C$ is assumed to be given by one of the following two representations:
 
 The `CONE` representation is given by a matrix $Y$ with $q$ rows and $o$ columns. A vector $(y_1, \dots, y_q)$ belongs to $C$ if and only if there are nonnegative real numbers $v_1, v_2, \dots, v_o \ge 0$ such that
 
-$$
+```math
 \begin{align}
 \begin{split}
 y_1 & = Y_{11} v_1 + Y_{12} v_2 + \dots + Y_{1o} v_o \\
@@ -78,12 +76,12 @@ y_2 & = Y_{21} v_1 + Y_{22} v_2 + \dots + Y_{2o} v_o \\
 y_q & = Y_{q1} v_1 + Y_{q2} v_2 + \dots + Y_{qo} v_o.
 \end{split}
 \end{align}
-$$
+```
 
 The columns of the matrix $Y$ are generating vectors of the polyhedral cone $C$.
 The `DUALCONE` representation is given by a matrix $Z$ with $q$ rows and $p$ columns. A vector $(y_1, \dots, y_q)$ belongs to $C$ if and only if the following inequalities are satisfied:
 
-$$
+```math
 \begin{align}
 \begin{split}
 Z_{11} y_1 + Z_{21} y_2 + \dots + Z_{q1} y_q & \ge 0 \\ 
@@ -92,7 +90,7 @@ Z_{12} y_1 + Z_{22} y_2 + \dots + Z_{q2} y_q & \ge 0 \\
 Z_{1p} y_1 + Z_{2p} y_2 + \dots + Z_{qp} y_q & \ge 0. 
 \end{split}
 \end{align}
-$$
+```
 
 The columns of the matrix $Z$ are generating vectors of the dual cone of the polyhedral cone $C$.
 
@@ -106,7 +104,7 @@ You can install the package from the package manager.
 
 You can then test the package with one of the example problems. Let us take a look at one of the examples:
 
-$$
+```math
 \begin{align*}
 \text{minimize} \quad & 
 \begin{pmatrix}
@@ -119,7 +117,7 @@ x_1 + x_2
 & x_1 \ge 0 \\
 & x_2 \ge 0
 \end{align*}
-$$
+```
 
 ```
 using Bensolve
@@ -146,15 +144,6 @@ b = [6, 6]
 
 bensolve(P, B, b)
 ```
-
-
-
-
-
-
-
-
-
 
 # Citation policy
 If you are using this version of Bensolve for scientific papers, please cite it as:
