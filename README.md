@@ -140,8 +140,8 @@ B = [
     1 2
 ]
 
-a = [-Inf, -Inf]
-b = [6, 6]
+a = [6, 6]
+b = [Inf, Inf]
 
 l = [0, 0]
 s = [Inf, Inf]
