@@ -101,7 +101,7 @@ The columns of the matrix $Z$ are generating vectors of the dual cone of the pol
 You can install the package from the package manager.
 
 ```
-] add Bensolve
+] add https://github.com/kofgokhan/Bensolve.jl
 ```
 
 You can then test the package with one of the example problems. Let us take a look at one of the examples:
