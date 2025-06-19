@@ -177,7 +177,7 @@ function vlp_solve(
                             isvertex, y... = parse.(Float64, split(line_img))
                             x = parse.(Float64, split(line_pre_img))
                             upper_img[_SolutionIndex(id)] =
-                                _Solution(id, y, x, adj[id], isvertex == 1)
+                                _Solution(id, x, y, adj[id], isvertex == 1)
                         end
                     end
                 end
@@ -189,7 +189,7 @@ function vlp_solve(
                             isvertex, y... = parse.(Float64, split(line_img))
                             x = parse.(Float64, split(line_pre_img))
                             lower_img[_SolutionIndex(id)] =
-                                _Solution(id, y, x, inc[id], isvertex == 1)
+                                _Solution(id, x, y, inc[id], isvertex == 1)
                         end
                     end
                 end
@@ -278,7 +278,7 @@ function molp_solve(
                             isvertex, y... = parse.(Float64, split(line_img))
                             x = parse.(Float64, split(line_pre_img))
                             upper_img[_SolutionIndex(id)] =
-                                _Solution(id, y, x, adj[id], isvertex == 1)
+                                _Solution(id, x, y, adj[id], isvertex == 1)
                         end
                     end
                 end
@@ -290,7 +290,7 @@ function molp_solve(
                             isvertex, y... = parse.(Float64, split(line_img))
                             x = parse.(Float64, split(line_pre_img))
                             lower_img[_SolutionIndex(id)] =
-                                _Solution(id, y, x, inc[id], isvertex == 1)
+                                _Solution(id, x, y, inc[id], isvertex == 1)
                         end
                     end
                 end
