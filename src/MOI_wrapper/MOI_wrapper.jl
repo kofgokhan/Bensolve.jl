@@ -229,7 +229,7 @@ end
 
 function MOI.get(model::Optimizer, ::MOI.DualStatus)
     if model.status == VLP_OPTIMAL
-        return MOI.OPTIMAL
+        return MOI.FEASIBLE_POINT
     else
         return MOI.NO_SOLUTION
     end
@@ -237,15 +237,11 @@ end
 
 function MOI.get(model::Optimizer, ::MOI.PrimalStatus)::MOI.ResultStatusCode
     if model.status == VLP_OPTIMAL
-        return MOI.OPTIMAL
+        return MOI.FEASIBLE_POINT
     elseif model.status == VLP_INFEASIBLE
-        return MOI.INFEASIBLE
-    elseif model.status == VLP_UNBOUNDED
-        return MOI.DUAL_INFEASIBLE
-    elseif model.status == VLP_NOVERTEX
-        return MOI.INFEASIBLE_OR_UNBOUNDED
-    elseif model.status in (VLP_INPUTERROR, VLP_UNEXPECTED_STATUS)
-        return MOI.OTHER_ERROR
+        return MOI.INFEASIBLE_POINT
+    else
+        return MOI.NO_SOLUTION
     end
 end
 
@@ -282,7 +278,7 @@ function MOI.get(model::Optimizer, ::MOI.TerminationStatus)::MOI.TerminationStat
 end
 
 function MOI.get(model::Optimizer, attr::MOI.ObjectiveValue)
-    return model.upper_img[_SolutionIndex(attr.result_index)]
+    return model.upper_img[_SolutionIndex(attr.result_index - 1)].y
 end
 
 function MOI.get(model::Optimizer, ::MOI.SolveTimeSec)
@@ -290,17 +286,17 @@ function MOI.get(model::Optimizer, ::MOI.SolveTimeSec)
 end
 
 function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, x::MOI.VariableIndex)
-    model.upper_img[attr.result_index].x[model.map[x]]
+    model.upper_img[_SolutionIndex(attr.result_index - 1)].x[model.map[x].value]
 end
 
 function MOI.get(
     model::Optimizer,
     attr::MOI.ConstraintDual,
-    ci::MOI.ConstraintIndex{<:MOI.AbstractVectorFunction},
+    ci::MOI.ConstraintIndex{<:MOI.AbstractScalarFunction},
 )
-    return model.lower_img[attr.result_index][model.map[ci]]
+    return model.lower_img[_SolutionIndex(attr.result_index - 1)].y[model.map[ci].value]
 end
 
 function MOI.get(model::Optimizer, attr::MOI.DualObjectiveValue)
-    return model.lower_img[attr.result_index]
+    return model.lower_img[_SolutionIndex(attr.result_index - 1)].y
 end
