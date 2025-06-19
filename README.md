@@ -155,7 +155,7 @@ Using JuMP:
 using JuMP, Bensolve
 
 model = Model(Bensolve.Optimizer)
-@variable(model, l[i] <= x[i = 1:n] <= u[i])
+@variable(model, l[i] <= x[i = 1:2] <= s[i])
 @constraint(model, a .<= B * x .<= b)
 @objective(model, Min, P * x)
 optimize!(model)
@@ -184,7 +184,6 @@ If you are using this version of Bensolve for scientific papers, please cite it 
    year = {2017},
 }
 ```
-
 [B] Löhne, A, Weißing, B.: The vector linear program solver Bensolve – notes on theoretical background, European J. Oper. Res., 260(3):807–813, 2017
 
 ```
@@ -194,6 +193,9 @@ If you are using this version of Bensolve for scientific papers, please cite it 
    title = {Bensolve - VLP solver},
 }
 ```
+
+
+# References
 
 [1] H. Benson. Further analysis of an outcome set-based algorithm for multiple-objective
 linear programming. Journal of Optimization Theory and Applications, 97(1):1–10,
