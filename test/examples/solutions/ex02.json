@@ -1,1 +1,8 @@
-[{"upper_image":[],"status":"infeasible","name":"ex02.vlp","lower_image":[]}]
+[
+    {
+        "upper_image": [],
+        "status": "infeasible",
+        "name": "ex02.vlp",
+        "lower_image": []
+    }
+]
