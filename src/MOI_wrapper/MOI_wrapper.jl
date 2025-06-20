@@ -46,6 +46,8 @@ end
 mutable struct Optimizer <: MOI.AbstractOptimizer
     map::MOI.IndexMap
     ctype::cone_gen_type
+    generator_matrix::Union{Nothing, AbstractMatrix{<:Real}}
+    duality_vector::Union{Nothing, AbstractVector{<:Real}}
     upper_img::Dict{_SolutionIndex,_Solution}
     lower_img::Dict{_SolutionIndex,_Solution}
     options::Dict{String,String}
@@ -55,6 +57,8 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     Optimizer() = new(
         MOI.IndexMap(),
         DEFAULT,
+        nothing,
+        nothing,
         Dict{_SolutionIndex,_Solution}(),
         Dict{_SolutionIndex,_Solution}(),
         Dict{String,String}(),
@@ -66,6 +70,8 @@ end
 function MOI.empty!(optimizer::Optimizer)
     optimizer.map = MOI.IndexMap()
     optimizer.ctype = DEFAULT
+    optimizer.generator_matrix = nothing
+    optimizer.duality_vector = nothing
     optimizer.upper_img = Dict{_SolutionIndex,_Solution}()
     optimizer.lower_img = Dict{_SolutionIndex,_Solution}()
     optimizer.options = Dict{String,String}()
@@ -77,6 +83,8 @@ end
 function MOI.is_empty(optimizer::Optimizer)
     return isempty(optimizer.map) &&
            optimizer.ctype == DEFAULT &&
+           optimizer.generator_matrix === nothing &&
+           optimizer.duality_vector === nothing &&
            isempty(optimizer.upper_img) &&
            isempty(optimizer.lower_img) &&
            isempty(optimizer.options) &&
@@ -212,6 +220,10 @@ MOI.supports(::Optimizer, ::DualityVector) = true
 function MOI.set(model::Optimizer, ::DualityVector, c::AbstractVector{<:Real})
     model.duality_vector = c
     return
+end
+
+function MOI.get(model::Optimizer, ::DualityVector)
+    return model.duality_vector
 end
 
 struct ConeType <: MOI.AbstractModelAttribute end
