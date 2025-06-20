@@ -9,7 +9,7 @@ function solve(filename)
         mktempdir("."; prefix = "jl_Bensolve_") do tmp
             ret, vlp, opt = _vlp_init(filename, vlp, opt)
             # Set output location
-            set_opt(opt, 5, ["./bensolve", filename, "-s", "--output_filename", tmp * "/"])
+            set_opt(opt, 7, ["./bensolve", filename, "-s", "--output_filename", tmp * "/", "--message_level", "0"])
             # Build a solution object
             sol = _sol_init(vlp, opt)
             # Prepare to solve
@@ -20,7 +20,6 @@ function solve(filename)
                 display_info(opt, Cdouble(elapsed_time), lp_get_num(Csize_t(0)));
             end
             status = sol[].status
-            @info status
             lp_free(Csize_t(0))
             upper_img = Dict{_SolutionIndex,_Solution}()
             lower_img = Dict{_SolutionIndex,_Solution}()

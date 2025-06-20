@@ -145,7 +145,7 @@ function vlp_solve(
         mktempdir("."; prefix = "jl_Bensolve_") do tmp
             vlp_ref = Ref(vlp)
             # Set output location
-            set_opt(opt, 5, ["./bensolve", "", "-s", "--output_filename", tmp * "/"])
+            set_opt(opt, 7, ["./bensolve", "", "-s", "--output_filename", tmp * "/", "--message_level", "0"])
             # Build a solution object
             sol = _sol_init(vlp_ref, opt)
             # Prepare to solve
@@ -162,7 +162,6 @@ function vlp_solve(
                 display_info(opt, Cdouble(elapsed_time), lp_get_num(Csize_t(0)));
             end
             status = sol[].status
-            @info status
             lp_free(Csize_t(0))
             upper_img = Dict{_SolutionIndex,_Solution}()
             lower_img = Dict{_SolutionIndex,_Solution}()
@@ -246,7 +245,7 @@ function molp_solve(
         mktempdir("."; prefix = "jl_Bensolve_") do tmp
             vlp_ref = Ref(vlp)
             # Set output location
-            set_opt(opt, 5, ["./bensolve", "", "-s", "--output_filename", tmp * "/"])
+            set_opt(opt, 7, ["./bensolve", "", "-s", "--output_filename", tmp * "/", "--message_level", "0"])
             # Build a solution object
             sol = _sol_init(vlp_ref, opt)
             # Prepare to solve
@@ -263,7 +262,6 @@ function molp_solve(
                 display_info(opt, Cdouble(elapsed_time), lp_get_num(Csize_t(0)));
             end
             status = sol[].status
-            @info status
             lp_free(Csize_t(0))
             upper_img = Dict{_SolutionIndex,_Solution}()
             lower_img = Dict{_SolutionIndex,_Solution}()
