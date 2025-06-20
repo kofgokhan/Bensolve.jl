@@ -1,6 +1,7 @@
 using Test
 using Bensolve
 using JuMP
+using JSON
 
 include("examples/example_utils.jl")
 
@@ -53,23 +54,29 @@ end
         model = Model(Bensolve.Optimizer)
         @variable(model, l[i] <= x[i=1:n] <= u[i])
         @constraint(model, a .<= B * x .<= b)
-        sense = opt_dir == 1 ? MOI.MIN_SENSE : MOI:MAX_SENSE
+        sense = opt_dir == 1 ? MOI.MIN_SENSE : MOI.MAX_SENSE
         @objective(model, sense, P * x)
         if !isempty(cone)
             ctype, n_gen = cone
             C = _extract_generator_matrix_from_file(filename, q, n_gen)
             c = _extract_duality_vec(filename, q)
-            MOI.set(model, Bensolve.OrderingCone, C)
-            MOI.set(model, Bensolve.DualityVector, c)
-            MOI.set(model, Bensolve.ConeType, if ctype == "CONE"
-                Bensolve.CONE
+            MOI.set(model, Bensolve.OrderingCone(), C)
+            MOI.set(model, Bensolve.DualityVector(), c)
+            MOI.set(model, Bensolve.ConeType(), if ctype == "CONE"
+                0
             elseif ctype == "DUALCONE"
-                Bensolve.DUALCONE
+                1
             else
-                Bensolve.DEFAULT
+                2
             end)
         end
         optimize!(model)
-        return
+        X = [value.(x, result=i) for i = 1:result_count(model)]
+        Y = [objective_value(model, result=i) for i = 1:result_count(model)]
+        sol = JSON.parsefile("examples/solutions/ex0$(i).json")
+        X_true = [Float64.(sol_i["x"]) for sol_i in sol["upper_image"]]
+        Y_true = [Float64.(sol_i["y"]) for sol_i in sol["upper_image"]]
+        @test sort(X) == sort(X_true)
+        @test sort(Y) == sort(Y_true)
     end
 end
