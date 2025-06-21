@@ -8,7 +8,14 @@ include("examples/example_utils.jl")
 @testset "Bensolve.jl using *.vlp files" begin
     for i = 1:6
         filename = "examples/ex0$(i).vlp"
-        solve(filename)
+        status, upper_img, lower_img, solve_time = solve(filename)
+        X = [v.x for v in values(upper_img)]
+        Y = [v.y for v in values(upper_img)]
+        sol = JSON.parsefile("examples/solutions/ex0$(i).json")
+        X_true = [Float64.(sol_i["x"]) for sol_i in sol["upper_image"]]
+        Y_true = [Float64.(sol_i["y"]) for sol_i in sol["upper_image"]]
+        @test sort(X) == sort(X_true)
+        @test sort(Y) == sort(Y_true)
     end
 end
 
@@ -17,13 +24,16 @@ end
         filename = "examples/ex0$(i).vlp"
         cone_gen = 2
         opt_dir, m, n, q, cone... = _extract_problem_info_from_file(filename)
-
+        X = []
+        Y = []
         if isempty(cone)
             P = _extract_objective_matrix_from_file(filename, q, n)
             B = _extract_constraint_matrix_from_file(filename, m, n)
             a, b = _extract_row_bounds(filename, m)
             l, u = _extract_col_bounds(filename, n)
-            molp_solve(P, B, a, b, l, u, opt_dir)
+            status, upper_img, lower_img, solve_time = molp_solve(P, B, a, b, l, u, opt_dir)
+            X = [v.x for v in values(upper_img)]
+            Y = [v.y for v in values(upper_img)]
         else
             ctype, n_gen = cone
             P = _extract_objective_matrix_from_file(filename, q, n)
@@ -37,11 +47,17 @@ end
             elseif lowercase(ctype) == "dualcone"
                 cone_gen = 1
             end
-            vlp_solve(P, B, a, b, l, u, C, c, opt_dir, cone_gen)
+            status, upper_img, lower_img, solve_time = vlp_solve(P, B, a, b, l, u, C, c, opt_dir, cone_gen)
+            X = [v.x for v in values(upper_img)]
+            Y = [v.y for v in values(upper_img)]
         end
+        sol = JSON.parsefile("examples/solutions/ex0$(i).json")
+        X_true = [Float64.(sol_i["x"]) for sol_i in sol["upper_image"]]
+        Y_true = [Float64.(sol_i["y"]) for sol_i in sol["upper_image"]]
+        @test sort(X) == sort(X_true)
+        @test sort(Y) == sort(Y_true)
     end
 end
-
 
 @testset "Bensolve.jl using MOI interface" begin
     for i = 1:6
@@ -62,9 +78,9 @@ end
             c = _extract_duality_vec(filename, q)
             MOI.set(model, Bensolve.OrderingCone(), C)
             MOI.set(model, Bensolve.DualityVector(), c)
-            MOI.set(model, Bensolve.ConeType(), if ctype == "CONE"
+            MOI.set(model, Bensolve.ConeType(), if lowercase(ctype) == "cone"
                 0
-            elseif ctype == "DUALCONE"
+            elseif lowercase(ctype) == "dualcone"
                 1
             else
                 2
