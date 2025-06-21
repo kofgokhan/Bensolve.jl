@@ -1,4 +1,4 @@
-Following is taken from Bensolve documentation:
+Following is taken from [Bensolve](http://bensolve.org/) documentation:
 
 # Bensolve.jl
 
