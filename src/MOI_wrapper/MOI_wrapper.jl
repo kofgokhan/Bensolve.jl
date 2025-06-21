@@ -112,7 +112,9 @@ function MOI.optimize!(dest::Optimizer, src::MOI.ModelLike)
         for ci in constraints
             f = MOI.get(src, MOI.ConstraintFunction(), ci)
             s = MOI.get(src, MOI.ConstraintSet(), ci)
-            l[dest.map[f].value], u[dest.map[f].value] = _bounds(s)
+            lower, upper = _bounds(s)
+            if !isinf(lower) l[dest.map[f].value] = lower end
+            if !isinf(upper) u[dest.map[f].value] = upper end
         end
     end
 
@@ -145,7 +147,7 @@ function MOI.optimize!(dest::Optimizer, src::MOI.ModelLike)
     end
     constraint_matrix = spzeros(Float64, m, n)
     a, b = fill(-Inf, m), fill(Inf, m)
-    for S in [MOI.LessThan{Float64}, MOI.EqualTo{Float64}, MOI.GreaterThan{Float64}]
+    for S in [MOI.LessThan{Float64}, MOI.EqualTo{Float64}, MOI.GreaterThan{Float64}, MOI.Interval{Float64}]
         constraints =
             MOI.get(src, MOI.ListOfConstraintIndices{MOI.ScalarAffineFunction{Float64},S}())
         for ci in constraints
@@ -155,22 +157,46 @@ function MOI.optimize!(dest::Optimizer, src::MOI.ModelLike)
                     term.coefficient
             end
             s = MOI.get(src, MOI.ConstraintSet(), ci)
-            a[dest.map[ci].value], b[dest.map[ci].value] = _bounds(s)
+            lower, upper = _bounds(s)
+            if !isinf(lower) a[dest.map[ci].value] = lower end
+            if !isinf(upper) b[dest.map[ci].value] = upper end
         end
     end
-    status, upper_img, lower_img, solve_time = molp_solve(
-        objective_matrix,
-        constraint_matrix,
-        a,
-        b,
-        l,
-        u,
-        sense == MOI.MIN_SENSE ? 1 : -1,
-    )
-    dest.status = status
-    dest.upper_img = upper_img
-    dest.lower_img = lower_img
-    dest.solve_time = solve_time
+    C = MOI.get(src, OrderingCone())
+    c = MOI.get(src, DualityVector())
+    ctype = MOI.get(src, ConeType())
+    if C === nothing
+        status, upper_img, lower_img, solve_time = molp_solve(
+            objective_matrix,
+            constraint_matrix,
+            a,
+            b,
+            l,
+            u,
+            sense == MOI.MIN_SENSE ? 1 : -1,
+        )
+        dest.status = status
+        dest.upper_img = upper_img
+        dest.lower_img = lower_img
+        dest.solve_time = solve_time
+    else
+        status, upper_img, lower_img, solve_time = vlp_solve(
+            objective_matrix,
+            constraint_matrix,
+            a,
+            b,
+            l,
+            u,
+            C, 
+            c, 
+            sense == MOI.MIN_SENSE ? 1 : -1,
+            ctype
+        )
+        dest.status = status
+        dest.upper_img = upper_img
+        dest.lower_img = lower_img
+        dest.solve_time = solve_time
+    end
 
     return dest.map, false
 end
