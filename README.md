@@ -146,7 +146,7 @@ b = [Inf, Inf]
 l = [0, 0]
 s = [Inf, Inf]
 
-molp_solve(P, B, a, b, l, s)
+status, upper_img, lower_img, solve_time = molp_solve(P, B, a, b, l, s)
 ```
 
 Using JuMP:
