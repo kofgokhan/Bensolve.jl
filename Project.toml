@@ -6,9 +6,7 @@ version = "0.1.0-DEV"
 [deps]
 CEnum = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
-SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 libbensolve_jll = "b87178c0-1e03-5bfb-8a01-b03b192b63a7"
 
 [compat]
