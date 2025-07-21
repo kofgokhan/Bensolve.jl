@@ -12,12 +12,13 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 libbensolve_jll = "b87178c0-1e03-5bfb-8a01-b03b192b63a7"
 
 [compat]
+DelimitedFiles = "1"
 julia = "1.10"
 
 [extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test", "JuMP", "JSON"]
