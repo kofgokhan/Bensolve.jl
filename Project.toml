@@ -12,6 +12,7 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 libbensolve_jll = "b87178c0-1e03-5bfb-8a01-b03b192b63a7"
 
 [compat]
+DelimitedFiles = "1"
 CEnum = "0.5"
 julia = "1.10"
 
