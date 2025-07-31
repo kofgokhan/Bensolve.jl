@@ -13,6 +13,7 @@ libbensolve_jll = "b87178c0-1e03-5bfb-8a01-b03b192b63a7"
 
 [compat]
 DelimitedFiles = "1"
+CEnum = "0.5"
 julia = "1.10"
 
 [extras]
