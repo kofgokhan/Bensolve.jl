@@ -121,7 +121,7 @@ x_1 + x_2
 \end{align*}
 ```
 
-```
+```julia
 using Bensolve
 
 status, upper_img, lower_img, solve_time = solve("ex01.vlp")
@@ -129,7 +129,7 @@ status, upper_img, lower_img, solve_time = solve("ex01.vlp")
 
 Alternatively, you can pass in the parameters of the problem yourself.
 
-```
+```julia
 P = [
     1 -1
     1  1
@@ -151,7 +151,7 @@ status, upper_img, lower_img, solve_time = molp_solve(P, B, a, b, l, s)
 
 Using JuMP:
 
-```
+```julia
 using JuMP, Bensolve
 
 model = Model(Bensolve.Optimizer)
